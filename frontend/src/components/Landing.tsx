@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BackendNote } from "./BackendNote";
 import { AgentsSection } from "./landing/AgentsSection";
 import { ArchitectureSection } from "./landing/ArchitectureSection";
 import { CapabilitySection } from "./landing/CapabilitySection";
@@ -34,6 +35,7 @@ export function Landing({ onEnter }: LandingProps) {
 
   return (
     <div ref={setScroller} className="scroll h-full min-h-0 overflow-x-hidden overflow-y-auto bg-[var(--bg)]">
+      <BackendNote />
       <LandingNavbar scroller={scroller} onLaunch={onEnter} />
       <main>
         <HeroSection onLaunch={onEnter} onArchitecture={goArchitecture} />

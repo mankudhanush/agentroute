@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Turn } from "./types";
+import { BackendNote } from "./components/BackendNote";
 import { ChatPanel } from "./components/ChatPanel";
 import { Composer } from "./components/Composer";
 import { Header } from "./components/Header";
@@ -21,6 +22,7 @@ export default function App() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      <BackendNote />
       <Header
         connected={route.connected}
         dark={route.dark}

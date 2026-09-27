@@ -4,7 +4,7 @@ Environment setup for AgentRoute. Follow these steps in order. **Do not write an
 code that calls Blender until the Blender verification step below prints a version
 number.**
 
-Requires **Python 3.10 or higher**. Check with:
+Requires **Python 3.12 or newer**. Python 3.14 can run the API; 3.12 is the safer choice for the Laya and PyTorch install. Check with:
 
 ```bash
 python3 --version   # macOS / Linux
@@ -129,9 +129,26 @@ python3 -c "import openai; import dotenv; print('ok')"
 python -c "import openai; import dotenv; print('ok')"
 ```
 
-This should print `ok`. Model calls use the OpenAI SDK against Gemini, Groq,
-NVIDIA, or OpenRouter. Laya is a separate install from `requirements.txt` and is
-only required when `DECISION_LAYER=laya`.
+This should print `ok`. Chat models stay on Gemini, NVIDIA, Groq, or OpenRouter.
+You enable them with API keys in `.env`. There is no weight download for those
+providers. The full catalog and the animated architecture are in the repository
+root `README.md` and `docs/architecture.html`.
+
+Laya is installed by `requirements.txt`. Download its checkpoint once, with the
+virtual environment active, before the first real decision:
+
+```powershell
+$env:LAYA_PRELOAD = "true"
+python -c "from laya import Router; Router(preload=True); print('laya checkpoint ready')"
+```
+
+```bash
+LAYA_PRELOAD=true python -c "from laya import Router; Router(preload=True); print('laya checkpoint ready')"
+```
+
+The checkpoint is `convaiinnovations/laya` on Hugging Face. Set
+`DECISION_LAYER=baseline` in `.env` to run without it. Set `LAYA_PRELOAD=true`
+if the API should load the checkpoint at startup.
 
 ### 5c. Run the pipeline offline (no API keys needed)
 

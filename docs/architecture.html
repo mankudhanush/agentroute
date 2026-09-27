@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentRoute architecture</title>
+  <style>
+    :root {
+      --bg: #10141a;
+      --panel: #171c24;
+      --line: #2c3442;
+      --text: #e8ebf2;
+      --muted: #9aa3b2;
+      --faint: #6d7686;
+      --accent: #8eb6ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+    }
+    main { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+    p.kicker {
+      margin: 0;
+      font-family: Consolas, ui-monospace, monospace;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    h1 { margin: 8px 0 12px; font-size: 32px; letter-spacing: -0.03em; }
+    .lead { margin: 0 0 28px; color: var(--muted); max-width: 62ch; }
+    .now {
+      min-height: 3.2em;
+      margin: 0 0 22px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+    }
+    .now strong { color: var(--text); }
+    ol.rail {
+      position: relative;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    ol.rail::before {
+      content: "";
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      left: 15px;
+      width: 1px;
+      background: var(--line);
+    }
+    .particle {
+      position: absolute;
+      left: 13px;
+      width: 5px;
+      height: 5px;
+      background: var(--accent);
+      animation: travel 12s linear infinite;
+    }
+    @keyframes travel {
+      0% { top: 0; opacity: 0; }
+      6% { opacity: 1; }
+      94% { opacity: 1; }
+      100% { top: calc(100% - 6px); opacity: 0; }
+    }
+    li {
+      position: relative;
+      padding: 0 0 12px 42px;
+    }
+    li .dot {
+      position: absolute;
+      top: 18px;
+      left: 11px;
+      width: 9px;
+      height: 9px;
+      border: 1px solid var(--accent);
+      background: var(--bg);
+    }
+    article {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 12px 14px;
+      animation: pulse 12s linear infinite;
+    }
+    article .idx {
+      font-family: Consolas, ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--faint);
+    }
+    article h2 { margin: 4px 0 0; font-size: 15px; }
+    article p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    li:nth-child(1) article { animation-delay: 0s; }
+    li:nth-child(2) article { animation-delay: 1.2s; }
+    li:nth-child(3) article { animation-delay: 2.4s; }
+    li:nth-child(4) article { animation-delay: 3.6s; }
+    li:nth-child(5) article { animation-delay: 4.8s; }
+    li:nth-child(6) article { animation-delay: 6s; }
+    li:nth-child(7) article { animation-delay: 7.2s; }
+    li:nth-child(8) article { animation-delay: 8.4s; }
+    li:nth-child(9) article { animation-delay: 9.6s; }
+    li:nth-child(10) article { animation-delay: 10.8s; }
+    @keyframes pulse {
+      0%, 8% { border-color: var(--accent); }
+      12%, 100% { border-color: var(--line); }
+    }
+    footer { margin-top: 28px; color: var(--faint); font-size: 14px; }
+    a { color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) {
+      .particle, article { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="kicker">AgentRoute</p>
+    <h1>System architecture</h1>
+    <p class="lead">A request moves down this path once. Laya chooses the agent. The model selector chooses the model. A tool runs only when that agent needs it.</p>
+    <p class="now" id="now" aria-live="polite">Watching the request.</p>
+    <ol class="rail" id="rail">
+      <span class="particle" aria-hidden="true"></span>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">01</div><h2>User request</h2><p>Natural-language text enters the API or the CLI.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">02</div><h2>Classifier</h2><p>A baseline reading of intent, complexity, and confidence. Laya may replace it.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">03</div><h2>Laya</h2><p>The decision layer. It is not a model, an agent, a provider, or a tool.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">04</div><h2>Agent selection</h2><p>One of six agents: general, coding, reasoning, research, 3D, or web.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">05</div><h2>Task profile</h2><p>Capability, complexity, context, output, and whether a tool is required.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">06</div><h2>Model selection</h2><p>The best-fit model for that profile. The provider follows the model.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">07</div><h2>Execution</h2><p>The selected agent calls the model. The router does not call a provider itself.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">08</div><h2>Tools</h2><p>Blender, Playwright, or web search, only when that agent owns the tool.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">09</div><h2>Evaluation and fallback</h2><p>The outcome is scored. A failed model stays inside the same agent and tries its fallback.</p></article></li>
+      <li><span class="dot" aria-hidden="true"></span><article><div class="idx">10</div><h2>Result</h2><p>The answer, the routing record, and any scene or page result return to the user.</p></article></li>
+    </ol>
+    <footer>
+      Same path as the running router. Open this file in a browser. The written guide is <a href="../README.md">README.md</a>.
+    </footer>
+  </main>
+  <script>
+    const lines = [
+      "The request arrives.",
+      "The classifier reads intent and complexity.",
+      "Laya chooses which agent should handle it.",
+      "One existing agent is selected.",
+      "The task profile records what the work needs.",
+      "A model is chosen for that profile.",
+      "The agent calls the provider.",
+      "A tool runs only if this agent is allowed to use it.",
+      "The outcome is recorded. A failed call can fall back inside the same agent.",
+      "The result returns to the user."
+    ];
+    const now = document.getElementById("now");
+    const articles = [...document.querySelectorAll("article h2")];
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      now.innerHTML = "<strong>Full path.</strong> Motion is off, so every stage stays visible.";
+    } else {
+      let index = 0;
+      const tick = () => {
+        const title = articles[index].textContent;
+        now.innerHTML = "<strong>" + title + ".</strong> " + lines[index];
+        index = (index + 1) % lines.length;
+      };
+      tick();
+      setInterval(tick, 1200);
+    }
+  </script>
+</body>
+</html>

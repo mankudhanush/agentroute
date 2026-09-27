@@ -375,11 +375,66 @@ button:disabled {
   }
 }
 
+.backend-note {
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.backend-note-track {
+  display: flex;
+  width: max-content;
+  animation: backend-note 28s linear infinite;
+}
+
+.backend-note-track p {
+  margin: 0;
+  padding: 8px 1.5rem;
+  white-space: nowrap;
+}
+
+.backend-note a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.backend-note:hover .backend-note-track,
+.backend-note:focus-within .backend-note-track {
+  animation-play-state: paused;
+}
+
+@keyframes backend-note {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise,
   .live-dot,
   .rail-flow {
     animation: none;
+  }
+
+  .backend-note-track {
+    animation: none;
+    width: auto;
+  }
+
+  .backend-note-track p[aria-hidden="true"] {
+    display: none;
+  }
+
+  .backend-note-track p {
+    white-space: normal;
+    text-align: center;
   }
 
   .rail-flow {
