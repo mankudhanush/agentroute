@@ -1,0 +1,32 @@
+# AgentRoute dependencies
+# Pins are floors - bump if pip reports a newer release or a conflict.
+
+# OpenAI Python SDK - used for ALL model providers (Gemini, OpenRouter, Groq)
+# via their OpenAI-compatible endpoints; only base_url differs.
+openai>=1.40.0
+
+# Load API keys / config from a .env file.
+python-dotenv>=1.0.1
+
+# Streamlit UI (ui.py)
+streamlit>=1.36.0
+
+# Browser tool used by WEB_AGENT. Playwright is a tool, not a model.
+playwright>=1.49.0
+
+# Laya Decision AI - the routing decision layer (selects WHICH agent).
+# https://pypi.org/project/laya/  |  https://huggingface.co/convaiinnovations/laya
+# WARNING: pulls torch + transformers (multi-GB) and downloads a checkpoint on
+# first use. Set DECISION_LAYER=baseline to run without it.
+laya>=0.3.3
+# Laya pulls transformers, and transformers 5.x requires a matching tokenizers.
+# A stale tokenizers (0.22.x) still imports but breaks EVERY Laya prediction at
+# runtime with an ImportError, silently forcing the fallback router.
+tokenizers>=0.23.1,<0.24.0
+
+# NOTE: no Gemini-specific SDK is required - Gemini is reached through Google's
+#       official OpenAI-compatible endpoint. Swapping to google-genai would be a
+#       change confined to providers.py.
+# NOTE: `laya` was intentionally NOT added - it could not be verified.
+# NOTE: `anthropic` is intentionally NOT used.
+# NOTE: routing memory uses sqlite3 from the standard library.

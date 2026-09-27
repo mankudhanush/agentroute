@@ -1,0 +1,179 @@
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 500ms ease, transform 500ms ease;
+}
+
+.lp-reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.lp-hero-copy > * {
+  animation: lp-fade 700ms ease both;
+}
+
+.lp-hero-copy > *:nth-child(2) { animation-delay: 80ms; }
+.lp-hero-copy > *:nth-child(3) { animation-delay: 160ms; }
+.lp-hero-copy > *:nth-child(4) { animation-delay: 240ms; }
+
+@keyframes lp-fade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.lp-card {
+  transition: border-color 200ms ease, transform 200ms ease;
+}
+
+.lp-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.lp-rail {
+  position: relative;
+}
+
+.lp-rail::before {
+  content: "";
+  position: absolute;
+  top: 0.65rem;
+  bottom: 0.65rem;
+  left: 0.95rem;
+  width: 1px;
+  background: var(--line);
+}
+
+.lp-particle {
+  position: absolute;
+  top: 0;
+  left: calc(0.95rem - 2px);
+  width: 5px;
+  height: 5px;
+  background: var(--accent);
+  animation: lp-travel 8s linear infinite;
+}
+
+@keyframes lp-travel {
+  0% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: calc(100% - 6px); opacity: 0; }
+}
+
+.lp-node {
+  animation: lp-node 8s ease-in-out infinite;
+}
+
+@keyframes lp-node {
+  0%, 100% { border-color: var(--line); }
+  45%, 55% { border-color: var(--accent); }
+}
+
+.lp-demo-step {
+  opacity: 0.38;
+}
+
+.lp-demo.is-run .lp-demo-step {
+  animation: lp-step 9.6s linear infinite;
+}
+
+.lp-demo.is-run .lp-demo-step:nth-child(1) { animation-delay: 0s; }
+.lp-demo.is-run .lp-demo-step:nth-child(2) { animation-delay: 1.2s; }
+.lp-demo.is-run .lp-demo-step:nth-child(3) { animation-delay: 2.4s; }
+.lp-demo.is-run .lp-demo-step:nth-child(4) { animation-delay: 3.6s; }
+.lp-demo.is-run .lp-demo-step:nth-child(5) { animation-delay: 4.8s; }
+.lp-demo.is-run .lp-demo-step:nth-child(6) { animation-delay: 6s; }
+.lp-demo.is-run .lp-demo-step:nth-child(7) { animation-delay: 7.2s; }
+
+@keyframes lp-step {
+  0%, 12% { opacity: 1; border-color: var(--accent); }
+  20%, 100% { opacity: 0.38; border-color: var(--line); }
+}
+
+.lp-branch-line {
+  transform-origin: top center;
+  animation: lp-grow 1.4s ease both;
+}
+
+@keyframes lp-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+.lp-cta {
+  background-image: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 55%);
+}
+
+.lp-visual {
+  overflow: visible;
+}
+
+.lp-dash {
+  stroke: color-mix(in srgb, var(--muted) 72%, var(--text));
+  stroke-width: 1.35;
+  stroke-dasharray: 2.5 5.5;
+  animation: lp-dash 22s linear infinite;
+}
+
+.lp-node-dot {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 1;
+  animation: lp-node 8s ease-in-out infinite;
+}
+
+.lp-flow-y {
+  cx: 210;
+  animation: lp-fall 10s linear infinite;
+}
+
+.lp-flow-model {
+  animation: lp-model 10s linear infinite;
+}
+
+.lp-card-edge {
+  box-shadow: inset 0 0 0 1px transparent;
+}
+
+.lp-card-edge:hover {
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+@keyframes lp-dash {
+  to { stroke-dashoffset: -220; }
+}
+
+@keyframes lp-fall {
+  0% { cy: 48; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { cy: 520; opacity: 0; }
+}
+
+@keyframes lp-model {
+  0% { cy: 28; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { cy: 252; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal,
+  .lp-hero-copy > *,
+  .lp-card,
+  .lp-particle,
+  .lp-node,
+  .lp-demo.is-run .lp-demo-step,
+  .lp-branch-line,
+  .lp-dash,
+  .lp-node-dot,
+  .lp-flow-y,
+  .lp-flow-model {
+    animation: none;
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}

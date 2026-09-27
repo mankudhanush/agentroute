@@ -1,0 +1,20 @@
+# Environment / secrets
+.env
+api.txt
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+.venv/
+
+# Blender generated output
+*.glb
+*.blend
+*.blend1
+
+# Routing memory (local SQLite DB)
+*.db
+routing_memory.db

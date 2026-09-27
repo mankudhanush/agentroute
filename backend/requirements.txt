@@ -1,0 +1,8 @@
+# API layer only. Install the AgentRoute core first:
+#   pip install -r ../agentroute/requirements.txt
+#
+# Model keys stay in agentroute/.env. This process loads that file.
+
+fastapi>=0.115.0
+uvicorn>=0.32.0
+httpx>=0.27.0
