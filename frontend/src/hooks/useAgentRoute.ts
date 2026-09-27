@@ -38,30 +38,34 @@ export function useAgentRoute() {
     const saved = sessionStorage.getItem(CONVERSATION_KEY);
     if (!saved) return;
     let cancel = false;
-    void loadConversation(saved).then((payload) => {
-      if (cancel) return;
-      if (!payload) {
-        sessionStorage.removeItem(CONVERSATION_KEY);
-        return;
-      }
-      const restored: Turn[] = [];
-      let last: AgentTurn | null = null;
-      for (const message of payload.messages) {
-        restored.push({ id: id(), kind: "user", text: message.prompt });
-        const agent: AgentTurn = {
-          id: id(),
-          kind: "agent",
-          prompt: message.prompt,
-          text: message.response,
-          result: { ...message.routing, conversation_id: payload.conversation_id },
-        };
-        restored.push(agent);
-        last = agent;
-      }
-      setConversationId(payload.conversation_id);
-      setTurns(restored);
-      setActive(last);
-    });
+    void loadConversation(saved)
+      .then((payload) => {
+        if (cancel) return;
+        if (!payload) {
+          sessionStorage.removeItem(CONVERSATION_KEY);
+          return;
+        }
+        const restored: Turn[] = [];
+        let last: AgentTurn | null = null;
+        for (const message of payload.messages) {
+          restored.push({ id: id(), kind: "user", text: message.prompt });
+          const agent: AgentTurn = {
+            id: id(),
+            kind: "agent",
+            prompt: message.prompt,
+            text: message.response,
+            result: { ...message.routing, conversation_id: payload.conversation_id },
+          };
+          restored.push(agent);
+          last = agent;
+        }
+        setConversationId(payload.conversation_id);
+        setTurns(restored);
+        setActive(last);
+      })
+      .catch(() => {
+        if (cancel) return;
+      });
     return () => {
       cancel = true;
     };

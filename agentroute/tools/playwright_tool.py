@@ -2,13 +2,15 @@
 
 Playwright is a tool. It is not an agent and it is not a model. A visible
 Chromium window starts when a page is opened and stays open so a later click,
-fill, read, screenshot, or navigation uses that same page.
+fill, read, screenshot, or navigation in the same conversation uses that same
+page. Another conversation gets its own page.
 """
 
 import os
 import queue
 import tempfile
 import threading
+import time
 from contextvars import ContextVar
 from urllib.parse import urlparse
 
@@ -17,6 +19,9 @@ from .base_tool import BaseTool, ToolResult
 # Per chat request. Unset means the existing tool path, so callers that do not
 # send the plugin toggle keep the tool available.
 playwright_capability: ContextVar[bool] = ContextVar("playwright_capability", default=True)
+
+# Which conversation owns the open page. Unset is the single-user CLI path.
+playwright_session_key: ContextVar[str | None] = ContextVar("playwright_session_key", default=None)
 
 _OPS = ("goto", "open", "navigate", "click", "fill", "title", "text", "read", "screenshot")
 _NAV = ("goto", "open", "navigate")
@@ -75,13 +80,19 @@ def _headless() -> bool:
 
 
 def browser_is_open() -> bool:
-    """Whether a page from an earlier browser action is still open."""
-    return _SESSION.alive()
+    """Whether this conversation still has a page from an earlier browser action."""
+    session = _existing_session()
+    return bool(session and session.alive())
 
 
 def close_browser() -> None:
-    """Close the shared Chromium page. Tests use this between cases."""
-    _SESSION.close()
+    """Close this conversation's Chromium page. Tests use this between cases."""
+    _close_current_browser()
+
+
+def close_all_browsers() -> None:
+    """Close every conversation's Chromium page."""
+    _close_every_browser()
 
 
 def _prepare(actions) -> list:
@@ -109,7 +120,7 @@ def _prepare(actions) -> list:
             })
         else:
             plan.append({"op": op})
-    if not any(step["op"] == "goto" for step in plan) and not _SESSION.alive():
+    if not any(step["op"] == "goto" for step in plan) and not browser_is_open():
         raise ValueError("The browser plan has no page to open. No browser was launched.")
     return plan
 
@@ -141,7 +152,8 @@ def _http_url(value) -> str | None:
 
 def _browse(plan: list) -> ToolResult:
     opens = any(step["op"] == "goto" for step in plan)
-    if not _SESSION.alive():
+    session = _existing_session()
+    if session is None or not session.alive():
         if not opens:
             return ToolResult(
                 tool="PLAYWRIGHT_TOOL",
@@ -149,12 +161,13 @@ def _browse(plan: list) -> ToolResult:
                 error="The browser plan has no page to open. No browser was launched.",
                 metadata={"invoked": True, "executed": False},
             )
+        session = _session()
         try:
-            _SESSION.ensure()
+            session.ensure()
         except Exception as exc:  # noqa: BLE001 - report the launch failure, do not invent a page
             return _failed(exc, executed=False)
     try:
-        observed = _SESSION.call(lambda page: _run(page, plan))
+        observed = session.call(lambda page: _run(page, plan))
     except Exception as exc:  # noqa: BLE001 - the browser error is the result
         return _failed(exc, executed=True)
 
@@ -379,4 +392,54 @@ class _BrowserSession:
             self._started.set()
 
 
-_SESSION = _BrowserSession()
+_DEFAULT_SESSION = ""
+_MAX_SESSIONS = 4
+_SESSIONS: dict[str, _BrowserSession] = {}
+_USED: dict[str, float] = {}
+_SESSIONS_LOCK = threading.Lock()
+
+
+def _current_key() -> str:
+    key = playwright_session_key.get()
+    return key if key else _DEFAULT_SESSION
+
+
+def _existing_session() -> _BrowserSession | None:
+    with _SESSIONS_LOCK:
+        return _SESSIONS.get(_current_key())
+
+
+def _session() -> _BrowserSession:
+    """The Chromium page for this conversation, creating one if needed."""
+    key = _current_key()
+    stale: list[_BrowserSession] = []
+    with _SESSIONS_LOCK:
+        session = _SESSIONS.get(key)
+        if session is None:
+            while len(_SESSIONS) >= _MAX_SESSIONS:
+                oldest = min(_SESSIONS, key=lambda item: _USED.get(item, 0))
+                stale.append(_SESSIONS.pop(oldest))
+                _USED.pop(oldest, None)
+            session = _BrowserSession()
+            _SESSIONS[key] = session
+        _USED[key] = time.monotonic()
+    for old in stale:
+        old.close()
+    return session
+
+
+def _close_current_browser() -> None:
+    with _SESSIONS_LOCK:
+        session = _SESSIONS.pop(_current_key(), None)
+        _USED.pop(_current_key(), None)
+    if session is not None:
+        session.close()
+
+
+def _close_every_browser() -> None:
+    with _SESSIONS_LOCK:
+        sessions = list(_SESSIONS.values())
+        _SESSIONS.clear()
+        _USED.clear()
+    for session in sessions:
+        session.close()

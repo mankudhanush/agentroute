@@ -11,7 +11,7 @@ logger = logging.getLogger("agentroute.api")
 import blender_scenes
 import router as core_router
 from agents.three_d_agent import blender_capability
-from tools.playwright_tool import browser_is_open, playwright_capability
+from tools.playwright_tool import browser_is_open, playwright_capability, playwright_session_key
 from blender_scenes import BlenderLaunchError, SceneNotFound, attach_blender_scene
 from errors import (
     AgentRouteError,
@@ -45,18 +45,20 @@ def build_chat_router(store, memory, executor=None) -> APIRouter:
             with session.lock:
                 token = blender_capability.set(body.blender)
                 browser_token = playwright_capability.set(body.playwright)
+                session_token = playwright_session_key.set(session.state.conversation_id)
                 try:
                     result = core_router.route(
                         body.message,
                         conversation_state=session.state,
                         memory=bound_memory,
                     )
+                    session.results.append(result)
+                    projected = project_result(result, session.state.conversation_id)
+                    return _note_browser(attach_blender_scene(projected, result))
                 finally:
+                    playwright_session_key.reset(session_token)
                     playwright_capability.reset(browser_token)
                     blender_capability.reset(token)
-                session.results.append(result)
-                projected = project_result(result, session.state.conversation_id)
-                return _note_browser(attach_blender_scene(projected, result))
 
         try:
             if executor is not None:
@@ -85,15 +87,19 @@ def build_chat_router(store, memory, executor=None) -> APIRouter:
                 status_code=404,
                 detail={"error": "not_found", "message": "Unknown conversation."},
             )
-        with session.lock:
-            messages = []
-            for index, turn in enumerate(session.state.turns):
-                result = session.results[index] if index < len(session.results) else None
-                item = project_turn(turn, result)
-                if result is not None and item.get("routing") is not None:
-                    attach_blender_scene(item["routing"], result)
-                    _note_browser(item["routing"])
-                messages.append(item)
+        session_token = playwright_session_key.set(conversation_id)
+        try:
+            with session.lock:
+                messages = []
+                for index, turn in enumerate(session.state.turns):
+                    result = session.results[index] if index < len(session.results) else None
+                    item = project_turn(turn, result)
+                    if result is not None and item.get("routing") is not None:
+                        attach_blender_scene(item["routing"], result)
+                        _note_browser(item["routing"])
+                    messages.append(item)
+        finally:
+            playwright_session_key.reset(session_token)
         return {"conversation_id": conversation_id, "messages": messages}
 
     @api.get("/api/blender/scene/{scene_id}")

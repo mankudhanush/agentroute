@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import uuid
 from pathlib import Path
@@ -45,6 +46,15 @@ def _tool_fields(response: str) -> dict | None:
     return fields
 
 
+def _zstd():
+    """Zstandard codec. Python 3.14 has it in the standard library."""
+    if sys.version_info >= (3, 14):
+        from compression import zstd
+    else:
+        from backports import zstd
+    return zstd
+
+
 def _looks_like_blend(path: Path) -> bool:
     """True for a classic .blend or a gzip/zstd file whose payload is one.
 
@@ -63,9 +73,7 @@ def _looks_like_blend(path: Path) -> bool:
 
             return gzip.decompress(payload).startswith(_BLEND_MAGIC)
         if payload.startswith(_ZSTD_MAGIC):
-            import compression.zstd as zstd
-
-            return zstd.decompress(payload).startswith(_BLEND_MAGIC)
+            return _zstd().decompress(payload).startswith(_BLEND_MAGIC)
     except Exception:
         return False
     return False

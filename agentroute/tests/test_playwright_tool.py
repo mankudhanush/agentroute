@@ -14,7 +14,12 @@ from urllib.parse import parse_qs, urlparse
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from tools.base_tool import ToolResult  # noqa: E402
-from tools.playwright_tool import PlaywrightTool, close_browser, playwright_capability  # noqa: E402
+from tools.playwright_tool import (  # noqa: E402
+    PlaywrightTool,
+    close_all_browsers,
+    playwright_capability,
+    playwright_session_key,
+)
 
 
 class _Pages(BaseHTTPRequestHandler):
@@ -64,16 +69,16 @@ class TestPlaywrightBrowser(unittest.TestCase):
     def tearDownClass(cls):
         cls.server.shutdown()
         cls.server.server_close()
-        close_browser()
+        close_all_browsers()
 
     def setUp(self):
-        close_browser()
+        close_all_browsers()
         self.tool = PlaywrightTool()
         self.token = playwright_capability.set(True)
 
     def tearDown(self):
         playwright_capability.reset(self.token)
-        close_browser()
+        close_all_browsers()
 
     def test_open_url(self):
         result = self.tool.run([{"op": "open", "url": self.base}])
@@ -138,6 +143,31 @@ class TestPlaywrightBrowser(unittest.TestCase):
         self.assertEqual(clicked.metadata["title"], "Second Page")
         self.assertIn("/second", clicked.metadata["url"])
         self.assertIn("Page title: Second Page", clicked.output)
+
+    def test_a_follow_up_does_not_use_another_conversations_page(self):
+        first = playwright_session_key.set("conversation-a")
+        try:
+            opened = self.tool.run([{"op": "open", "url": self.base}])
+        finally:
+            playwright_session_key.reset(first)
+        self.assertTrue(opened.success, opened.error)
+
+        second = playwright_session_key.set("conversation-b")
+        try:
+            foreign = self.tool.run([{"op": "read"}])
+        finally:
+            playwright_session_key.reset(second)
+        self.assertFalse(foreign.success)
+        self.assertIn("No browser was launched", foreign.error)
+        self.assertEqual(foreign.output, "")
+
+        again = playwright_session_key.set("conversation-a")
+        try:
+            followed = self.tool.run([{"op": "title"}])
+        finally:
+            playwright_session_key.reset(again)
+        self.assertTrue(followed.success, followed.error)
+        self.assertEqual(followed.metadata["title"], "Start Page")
 
     def test_invalid_selector_returns_the_real_error(self):
         result = self.tool.run([

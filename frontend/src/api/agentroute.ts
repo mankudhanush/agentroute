@@ -101,6 +101,6 @@ export async function loadConversation(conversationId: string): Promise<Conversa
     return data as ConversationPayload;
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    return null;
+    throw new ApiError(0, "Cannot reach the AgentRoute API. Start the backend and try again.");
   }
 }

@@ -177,6 +177,37 @@ class TestChatApi(unittest.TestCase):
         self.assertEqual(omitted.status_code, 200, omitted.text)
         self.assertEqual(seen, [False, True, True])
 
+    def test_chat_scopes_the_browser_to_the_conversation(self):
+        from tools.playwright_tool import playwright_session_key
+
+        seen = []
+
+        def spy(prompt, policy=None, conversation_state=None, memory=None, **kwargs):
+            seen.append(playwright_session_key.get())
+            return dict(FIXTURE)
+
+        original = router.route
+        router.route = spy
+        try:
+            client = TestClient(create_app())
+            first = client.post("/api/chat", json={"message": "Open example.com"})
+            first_id = first.json()["conversation_id"]
+            second = client.post(
+                "/api/chat",
+                json={"message": "Read the page", "conversation_id": first_id},
+            )
+            other = client.post("/api/chat", json={"message": "Open example.com"})
+        finally:
+            router.route = original
+
+        other_id = other.json()["conversation_id"]
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual(second.status_code, 200, second.text)
+        self.assertEqual(other.status_code, 200, other.text)
+        self.assertEqual(seen, [first_id, first_id, other_id])
+        self.assertNotEqual(first_id, other_id)
+        self.assertEqual(second.json()["conversation_id"], first_id)
+
     def test_real_route_agent_and_model_are_returned_unchanged(self):
         """The API body matches a direct router.route() call for the same prompt."""
         old_layer = os.environ.get("DECISION_LAYER")
@@ -400,9 +431,14 @@ class TestBlenderSceneApi(unittest.TestCase):
         self.assertEqual(loaded.json()["messages"][0]["routing"]["blender_scene"]["scene_id"], scene_id)
 
     def test_a_zstd_compressed_blender_5_scene_is_exposed(self):
-        import compression.zstd
+        import sys
 
-        self.blend.write_bytes(compression.zstd.compress(b"BLENDER17-01v050rest"))
+        if sys.version_info >= (3, 14):
+            from compression import zstd
+        else:
+            from backports import zstd
+
+        self.blend.write_bytes(zstd.compress(b"BLENDER17-01v050rest"))
         original = router.route
         router.route = self._client(_scene_reply(str(self.blend)))
         try:
